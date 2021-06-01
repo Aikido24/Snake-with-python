@@ -10,6 +10,7 @@ framerate = 60
 clock = pygame.time.Clock()
 apple = pygame.image.load('Graphics/apple.png').convert_alpha()
 game_font = pygame.font.Font('Font/PoetsenOne-Regular.ttf',25)
+trap = pygame.image.load('Graphics/trap.png').convert_alpha()
 
 class SNAKE():
     def __init__(self):
@@ -118,7 +119,6 @@ class SNAKE():
 
 
     def move(self):
-        
         num = random.randint(0,3)
         if num == 0:
             self.left()
@@ -133,10 +133,7 @@ class SNAKE():
     def time_move(self):
         self.time_2 -=1
         if self.time >= self.time_2:
-            print(self.time)
             self.time_2+=100
-            print("hola")
-            print(self.time)
             self.move()
 
     def reset(self):
@@ -156,6 +153,20 @@ class FRUIT():
     def draw_fruit(self):
         fruit_rect = pygame.Rect(int(self.pos.x * cell_size),int(self.pos.y * cell_size),cell_size,cell_size)
         screen.blit(apple,fruit_rect)
+        #pygame.draw.rect(screen,(126,166,114),fruit_rect)
+
+    def randomize(self):
+        self.x = random.randint(0,cell_number-1)
+        self.y = random.randint(0,cell_number-1)
+        self.pos = Vector2(self.x,self.y)
+
+class TRAP():
+    def __init__(self):
+        self.randomize()
+    
+    def draw_trap(self):
+        fruit_rect = pygame.Rect(int(self.pos.x * cell_size),int(self.pos.y * cell_size),cell_size,cell_size)
+        screen.blit(trap,fruit_rect)
         #pygame.draw.rect(screen,(126,166,114),fruit_rect)
 
     def randomize(self):
@@ -184,6 +195,8 @@ class MAIN():
         self.snake = SNAKE()
         self.fruit = FRUIT()
         self.menu = MENU()
+        self.traps = []
+        self.traps_sound = pygame.mixer.Sound('Sound/trap.mp3')
 
     def update(self):
         self.snake.move_snake()
@@ -191,8 +204,7 @@ class MAIN():
         self.check_fail()
     
     def draw_elements(self):
-        
-        
+
         if self.menu.condition:
             self.draw_grass()
             self.fruit.draw_fruit()
@@ -202,6 +214,9 @@ class MAIN():
 
         else:
             self.draw_grass()
+            if len(self.traps)> 0:
+                for i in self.traps:
+                    i.draw_trap()
             self.fruit.draw_fruit()
             self.snake.draw_snake()
             self.draw_score()
@@ -213,10 +228,27 @@ class MAIN():
             self.fruit.randomize()
             self.snake.add_block()
             self.snake.play_crunch_sound()
-
+            if (len(self.snake.body)-2)%5 == 0 and len(self.snake.body)!= 3:
+                trap = TRAP()
+                for block in self.snake.body[1:]:
+                    if block == trap.pos:
+                        trap.randomize()
+                if len(self.traps) != 0:
+                    for tra in self.traps:
+                        if tra.pos == trap.pos: 
+                            trap.randomize()  
+                self.traps.append(trap)
+            
         for block in self.snake.body[1:]:
             if block == self.fruit.pos:
-                self.fruit.randomize() 
+                self.fruit.randomize()
+            if len(self.traps) != 0:
+                    for tra in self.traps:
+                        if tra.pos == self.fruit.pos: 
+                            self.fruit.randomize()
+            
+        
+        
 
     def check_fail(self):
         if self.menu.condition:
@@ -228,9 +260,16 @@ class MAIN():
         for block in self.snake.body[1:]:
             if block == self.snake.body[0]:
                 self.game_over()
+        if len(self.traps) != 0:
+            for tra in self.traps:
+                if tra.pos == self.snake.body[0]:
+                    self.traps_sound.play()
+                    self.game_over()
+                    
 
     def game_over(self):
         self.snake.reset()
+        self.traps = []
 
     def draw_grass(self):
         grass_color= (167,209,61)
@@ -304,4 +343,3 @@ while True:
     clock.tick(framerate)
     
 
-#1:56:50 - Adding the sound
