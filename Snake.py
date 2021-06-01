@@ -13,9 +13,12 @@ game_font = pygame.font.Font('Font/PoetsenOne-Regular.ttf',25)
 
 class SNAKE():
     def __init__(self):
+        self.time = 0
+        self.time_2 = -10
         self.body = [Vector2(5,10),Vector2(4,10),Vector2(3,10)]
         self.direction = Vector2(0,0)
         self.new_block = False
+        
 
         self.head_up = pygame.image.load('Graphics/head_up.png').convert_alpha()
         self.head_down = pygame.image.load('Graphics/head_down.png').convert_alpha()
@@ -81,8 +84,7 @@ class SNAKE():
         elif head_relation == Vector2(-1,0): self.head = self.head_right
         elif head_relation == Vector2(0,1): self.head = self.head_up
         elif head_relation == Vector2(0,-1): self.head = self.head_down
-
-        
+  
     def move_snake(self):
         if self.new_block:
             body_copy = self.body[:]
@@ -97,10 +99,54 @@ class SNAKE():
     
     def play_crunch_sound(self):
         self.crunch_sound.play()
+    
+    def up(self):
+        if self.direction.y != 1:
+            self.direction = Vector2(0,-1)
+
+    def down(self):
+        if self.direction.y != -1:
+            self.direction = Vector2(0,1)
+
+    def left(self):
+        if self.direction.x != 1:
+            self.direction = Vector2(-1,0)
+
+    def right(self):
+        if self.direction.x != -1:
+            self.direction = Vector2(1,0)
+
+
+    def move(self):
+        
+        num = random.randint(0,3)
+        if num == 0:
+            self.left()
+        elif num == 1:
+            self.up()
+        elif num == 2:
+            self.down()
+        else:
+            self.right()
+            
+    
+    def time_move(self):
+        self.time_2 -=1
+        if self.time >= self.time_2:
+            print(self.time)
+            self.time_2+=100
+            print("hola")
+            print(self.time)
+            self.move()
 
     def reset(self):
         self.body = [Vector2(5,10),Vector2(4,10),Vector2(3,10)]
         self.direction = Vector2(0,0)
+    
+
+    
+    
+    
 
 
 class FRUIT():
@@ -117,11 +163,27 @@ class FRUIT():
         self.y = random.randint(0,cell_number-1)
         self.pos = Vector2(self.x,self.y)
 
+class MENU():
+    def __init__(self):
+        self.condition = True
+        self.menu_font = pygame.font.Font('Font/PoetsenOne-Regular.ttf',80)
+        self.menu_font_two = pygame.font.Font('Font/PoetsenOne-Regular.ttf',60)
+    def draw_menu(self):
+        menu_surface = self.menu_font.render("Snake",True,(56,74,12))
+        start_surface = self.menu_font_two.render("Press Start ",True,(56,74,12))
+        screen.blit(menu_surface,((cell_number*(cell_size/2))-(menu_surface.get_size()[0]/2),cell_number*(cell_size/2)))
+        screen.blit(start_surface,((cell_number*(cell_size/2))-(start_surface.get_size()[0]/2),cell_number*((cell_size/2)+5)))
+    def strart(self):
+        if self.condition :
+            self.condition = False
+        else:
+            self.condition = True
 
 class MAIN():
     def __init__(self):
         self.snake = SNAKE()
         self.fruit = FRUIT()
+        self.menu = MENU()
 
     def update(self):
         self.snake.move_snake()
@@ -129,10 +191,22 @@ class MAIN():
         self.check_fail()
     
     def draw_elements(self):
-        self.draw_grass()
-        self.fruit.draw_fruit()
-        self.snake.draw_snake()
-        self.draw_score()
+        
+        
+        if self.menu.condition:
+            self.draw_grass()
+            self.fruit.draw_fruit()
+            self.snake.draw_snake()
+            self.menu.draw_menu()
+            self.snake.time_move()
+
+        else:
+            self.draw_grass()
+            self.fruit.draw_fruit()
+            self.snake.draw_snake()
+            self.draw_score()
+            
+
 
     def check_collision(self):
         if self.fruit.pos == self.snake.body[0]:
@@ -145,6 +219,9 @@ class MAIN():
                 self.fruit.randomize() 
 
     def check_fail(self):
+        if self.menu.condition:
+            if not 6 <= self.snake.body[0].x < cell_number-6 or not 6 <= self.snake.body[0].y < cell_number-6:
+                self.snake.move()
         if not 0 <= self.snake.body[0].x < cell_number or not 0 <= self.snake.body[0].y < cell_number:
             self.game_over()
         
@@ -199,23 +276,25 @@ def event_game():
         if event.type == SCREEN_UPDATE:
             main_game.update()            
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                if main_game.snake.direction.y != 1:
-                    main_game.snake.direction = Vector2(0,-1)
-            
-            if event.key == pygame.K_DOWN:
-                if main_game.snake.direction.y != -1:
-                    main_game.snake.direction = Vector2(0,1)
-            
-            if event.key == pygame.K_LEFT:
-                if main_game.snake.direction.x != 1:
-                    main_game.snake.direction = Vector2(-1,0)
+            if main_game.menu.condition:
+                if event.key == pygame.K_RETURN:
+                   main_game.menu.strart()
+                   main_game.snake.reset()
+            else:
+                if event.key == pygame.K_UP:
+                    main_game.snake.up()
+                
+                if event.key == pygame.K_DOWN:
+                    main_game.snake.down()
+                
+                if event.key == pygame.K_LEFT:
+                    main_game.snake.left()
 
-            if event.key == pygame.K_RIGHT:
-                if main_game.snake.direction.x != -1:
-                    main_game.snake.direction = Vector2(1,0)
+                if event.key == pygame.K_RIGHT:
+                    main_game.snake.right()
+                    
 
-            
+                
 
 while True:
     event_game()
@@ -223,5 +302,6 @@ while True:
     main_game.draw_elements()
     pygame.display.update()
     clock.tick(framerate)
+    
 
 #1:56:50 - Adding the sound
